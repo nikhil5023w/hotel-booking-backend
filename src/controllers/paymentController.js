@@ -1,0 +1,88 @@
+import { getStripe } from "../config/stripe.js";
+import Room from "../models/Room.js";
+
+export const createCheckoutSession = async (req, res) => {
+  try {
+    console.log("BODY:", req.body);
+    console.log("FILE:", req.file);
+    console.log("USER:", req.user);
+    console.log("CLIENT_URL:", process.env.CLIENT_URL);
+    const {
+      roomId,
+      checkInDate,
+      checkOutDate,
+      fullName,
+      phone,
+      email,
+      age,
+      documentType, // ⭐ NEW
+    } = req.body;
+    // ⭐ Validate required fields
+    if (!roomId || !checkInDate || !checkOutDate) {
+      return res.status(400).json({ message: "Missing booking details" });
+    }
+
+    const room = await Room.findById(roomId);
+
+    if (!room) {
+      return res.status(404).json({ message: "Room not found" });
+    }
+
+    // ⭐ Get uploaded ID proof URL from Cloudinary
+    const idProofUrl = req.file?.path || "";
+
+    // ⭐ Calculate stay duration
+    const days =
+      (new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24);
+
+    if (days <= 0) {
+      return res.status(400).json({ message: "Invalid date selection" });
+    }
+
+    const totalPrice = days * room.price;
+
+    const stripe = getStripe();
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ["card"],
+
+      line_items: [
+        {
+          price_data: {
+            currency: "gbp", // ⭐ Stripe currency (UK client)
+            product_data: {
+              name: room.name,
+              description: room.description,
+            },
+            unit_amount: Math.round(totalPrice * 100), // pence
+          },
+          quantity: 1,
+        },
+      ],
+
+      mode: "payment",
+
+      // ⭐ Pass guest details to webhook
+      metadata: {
+        roomId,
+        checkInDate,
+        checkOutDate,
+        userId: req.user._id.toString(),
+        fullName: fullName || "",
+        phone: phone || "",
+        email: email || "",
+        age: age || "",
+        idProofUrl: idProofUrl || "",
+        documentType: documentType || "", // ⭐ NEW
+      },
+
+      success_url: `${process.env.CLIENT_URL}/payment-success`,
+      cancel_url: `${process.env.CLIENT_URL}/payment-cancel`,
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error("Checkout error:", error);
+    res.status(500).json({ message: "Payment error" });
+  }
+};
