@@ -3,10 +3,16 @@ import Room from "../models/Room.js";
 
 export const createCheckoutSession = async (req, res) => {
   try {
+    console.log("------ PAYMENT REQUEST ------");
     console.log("BODY:", req.body);
     console.log("FILE:", req.file);
     console.log("USER:", req.user);
+    console.log("HEADERS:", req.headers.authorization);
     console.log("CLIENT_URL:", process.env.CLIENT_URL);
+    console.log(
+      "STRIPE_KEY:",
+      process.env.STRIPE_SECRET_KEY ? "Loaded" : "Missing",
+    );
     const {
       roomId,
       checkInDate,
@@ -21,7 +27,7 @@ export const createCheckoutSession = async (req, res) => {
     if (!roomId || !checkInDate || !checkOutDate) {
       return res.status(400).json({ message: "Missing booking details" });
     }
-
+    console.log("ROOM ID:", roomId);
     const room = await Room.findById(roomId);
 
     if (!room) {
