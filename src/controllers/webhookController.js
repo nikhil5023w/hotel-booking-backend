@@ -27,6 +27,15 @@ export const handleWebhook = async (req, res) => {
   if (event.type === "checkout.session.completed") {
     try {
       const session = event.data.object;
+      // 🚨 Prevent duplicate bookings
+      const existingBooking = await Booking.findOne({
+        paymentIntentId: session.payment_intent,
+      });
+
+      if (existingBooking) {
+        console.log("⚠️ Duplicate webhook ignored:", session.payment_intent);
+        return res.json({ received: true });
+      }
 
       const {
         roomId,
@@ -43,11 +52,31 @@ export const handleWebhook = async (req, res) => {
 
       const room = await Room.findById(roomId);
 
+      if (!room) {
+        console.error("Room not found:", roomId);
+        return res.json({ received: true });
+      }
       const days =
         (new Date(checkOutDate) - new Date(checkInDate)) /
         (1000 * 60 * 60 * 24);
 
       const totalPrice = days * room.price;
+      // 🚨 Prevent double booking
+      const overlappingBooking = await Booking.findOne({
+        room: roomId,
+        status: "confirmed",
+        $or: [
+          {
+            checkInDate: { $lt: new Date(checkOutDate) },
+            checkOutDate: { $gt: new Date(checkInDate) },
+          },
+        ],
+      });
+
+      if (overlappingBooking) {
+        console.log("⚠️ Room already booked for these dates");
+        return res.json({ received: true });
+      }
 
       // ⭐ CREATE BOOKING WITH GUEST DETAILS
       await Booking.create({
@@ -59,6 +88,7 @@ export const handleWebhook = async (req, res) => {
         checkOutDate,
         totalPrice,
         paymentIntentId: session.payment_intent,
+        stripeSessionId: session.id,
         status: "confirmed",
 
         guestDetails: {

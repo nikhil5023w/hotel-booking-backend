@@ -17,6 +17,8 @@ import express from "express";
 import protect from "../middleware/authMiddleware.js";
 import { createCheckoutSession } from "../controllers/paymentController.js";
 import upload from "../middleware/uploadMiddleware.js";
+import Booking from "../models/Booking.js";
+import { getStripe } from "../config/stripe.js";
 
 const router = express.Router();
 
@@ -38,5 +40,38 @@ router.post(
   },
   createCheckoutSession,
 );
+
+
+
+router.get("/verify-session", protect, async (req, res) => {
+  try {
+    const { session_id } = req.query;
+
+    const stripe = getStripe();
+
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+
+    if (session.payment_status !== "paid") {
+      return res.status(400).json({ success: false });
+    }
+
+    const booking = await Booking.findOne({
+      stripeSessionId: session.id,
+    }).populate("room");
+
+    if (!booking) {
+      return res.status(404).json({ success: false });
+    }
+
+    res.json({
+      success: true,
+      booking,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 export default router;
