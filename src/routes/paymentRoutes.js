@@ -41,8 +41,6 @@ router.post(
   createCheckoutSession,
 );
 
-
-
 router.get("/verify-session", protect, async (req, res) => {
   try {
     const { session_id } = req.query;
@@ -60,14 +58,16 @@ router.get("/verify-session", protect, async (req, res) => {
     }).populate("room");
 
     if (!booking) {
-      return res.status(404).json({ success: false });
+      return res.json({
+        success: false,
+        pending: true,
+      });
     }
 
     res.json({
       success: true,
       booking,
     });
-
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: error.message });
