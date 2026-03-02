@@ -174,6 +174,7 @@ export const createRoom = async (req, res, next) => {
   try {
     console.log("BODY:", req.body);
     console.log("FILES RECEIVED:", Object.keys(req.files || {}));
+    console.log("FILES:", JSON.stringify(req.files, null, 2));
     const {
       name,
       roomType,
@@ -208,8 +209,11 @@ export const createRoom = async (req, res, next) => {
 
     res.status(201).json(room);
   } catch (error) {
-    console.log("ROOM CREATE ERROR:", error);
-    next(error);
+    console.error("ROOM CREATE ERROR:", error);
+    res.status(500).json({
+      message: error.message,
+      stack: error.stack,
+    });
   }
 };
 
