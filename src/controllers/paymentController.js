@@ -93,7 +93,9 @@ export const createCheckoutSession = async (req, res) => {
 
     res.json({ url: session.url });
   } catch (error) {
-    console.error("Checkout error:", error);
-    res.status(500).json({ message: "Payment error" });
+    console.error("Checkout error FULL:", error);
+    console.error("Checkout error MESSAGE:", error.message);
+    console.error("Checkout error STACK:", error.stack);
+    res.status(500).json({ message: error.message });
   }
 };
