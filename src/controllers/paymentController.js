@@ -3,6 +3,7 @@ import Room from "../models/Room.js";
 
 export const createCheckoutSession = async (req, res) => {
   try {
+    console.log("USER FROM TOKEN:", req.user);
     console.log("------ PAYMENT REQUEST ------");
     console.log("BODY:", req.body);
     console.log("FILE:", req.file);
@@ -45,10 +46,14 @@ export const createCheckoutSession = async (req, res) => {
       return res.status(400).json({ message: "Invalid date selection" });
     }
 
-    const totalPrice = days * room.price;
-
+    const totalPrice = days * (room.price || 0);
     const stripe = getStripe();
-
+    if (!stripe) {
+      throw new Error("Stripe not initialized");
+    }
+    if (!req.user) {
+      return res.status(401).json({ message: "User authentication failed" });
+    }
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
 
@@ -73,7 +78,7 @@ export const createCheckoutSession = async (req, res) => {
         roomId,
         checkInDate,
         checkOutDate,
-        userId: req.user._id.toString(),
+        userId: req.user?._id?.toString() || "",
         fullName: fullName || "",
         phone: phone || "",
         email: email || "",
