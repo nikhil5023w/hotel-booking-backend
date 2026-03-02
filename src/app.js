@@ -20,6 +20,14 @@ import analyticsRoutes from "./routes/analyticsRoutes.js";
 
 const app = express();
 
+app.use((req, res, next) => {
+  console.log("----- INCOMING REQUEST -----");
+  console.log("METHOD:", req.method);
+  console.log("URL:", req.originalUrl);
+  console.log("HEADERS:", req.headers["content-type"]);
+  next();
+});
+
 // =======================
 // CONNECT DATABASE
 // =======================
@@ -54,6 +62,21 @@ app.use("/api/refunds", refundRoutes);
 // =======================
 // ERROR HANDLER
 // =======================
+
+app.use((err, req, res, next) => {
+  if (err) {
+    console.error("MULTER OR ROUTE ERROR:", err);
+  }
+  next(err);
+});
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+
+  res.status(500).json({
+    message: err.message || "Server Error",
+    stack: err.stack,
+  });
+});
 app.use(errorHandler);
 app.use((err, req, res, next) => {
   console.error("GLOBAL ERROR:", err);
