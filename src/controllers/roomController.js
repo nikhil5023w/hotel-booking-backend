@@ -173,8 +173,7 @@ import Room from "../models/Room.js";
 export const createRoom = async (req, res, next) => {
   try {
     console.log("BODY:", req.body);
-    console.log("FILES:", req.files);
-
+    console.log("FILES RECEIVED:", Object.keys(req.files || {}));
     const {
       name,
       roomType,
@@ -203,7 +202,7 @@ export const createRoom = async (req, res, next) => {
       capacity,
       coverImages,
       galleryImages,
-      amenities: amenities ? JSON.parse(amenities) : [],
+      amenities: amenities ? JSON.parse(amenities || "[]") : [],
       isAvailable,
     });
 

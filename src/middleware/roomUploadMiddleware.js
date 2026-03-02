@@ -1,6 +1,10 @@
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
+console.log(
+  "Cloudinary in roomUploadMiddleware :",
+  process.env.CLOUDINARY_NAME ? "Loaded" : "Missing",
+);
 
 const storage = new CloudinaryStorage({
   cloudinary,
