@@ -26,7 +26,6 @@
 
 // export default roomUpload;
 
-
 // import multer from "multer";
 // import { CloudinaryStorage } from "multer-storage-cloudinary";
 // import cloudinary from "../config/cloudinary.js";
@@ -57,14 +56,13 @@
 
 // export default roomUpload;
 
-
 import multer from "multer";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import cloudinary from "../config/cloudinary.js";
 
 console.log(
   "Cloudinary in roomUpload:",
-  process.env.CLOUDINARY_CLOUD_NAME ? "Loaded" : "Missing"
+  process.env.CLOUDINARY_CLOUD_NAME ? "Loaded" : "Missing",
 );
 
 const storage = new CloudinaryStorage({
@@ -83,7 +81,9 @@ const storage = new CloudinaryStorage({
     };
   },
 });
-
-const roomUpload = multer({ storage });
+const roomUpload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+});
 
 export default roomUpload;

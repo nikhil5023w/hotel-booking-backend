@@ -18,7 +18,6 @@ import invoiceRoutes from "./routes/invoiceRoutes.js";
 import refundRoutes from "./routes/refundRoutes.js";
 import analyticsRoutes from "./routes/analyticsRoutes.js";
 
-
 const app = express();
 
 // =======================
@@ -52,11 +51,17 @@ app.use("/api/payments", paymentRoutes);
 app.use("/api/invoices", invoiceRoutes);
 app.use("/api/refunds", refundRoutes);
 
-
-
 // =======================
 // ERROR HANDLER
 // =======================
 app.use(errorHandler);
+app.use((err, req, res, next) => {
+  console.error("GLOBAL ERROR:", err);
+
+  res.status(500).json({
+    message: err.message || "Server Error",
+    stack: err.stack,
+  });
+});
 
 export default app;
