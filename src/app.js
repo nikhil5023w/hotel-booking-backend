@@ -25,7 +25,6 @@ const app = express();
 // CONNECT DATABASE
 // =======================
 connectDB();
-app.use("/api/webhook", webhookRoutes);
 
 // =======================
 // GLOBAL MIDDLEWARES
@@ -33,6 +32,7 @@ app.use("/api/webhook", webhookRoutes);
 app.use(cors());
 app.use(express.json());
 
+app.use("/api/webhook", webhookRoutes);
 // =======================
 // HEALTH CHECK ROUTE
 // =======================

@@ -260,10 +260,15 @@ import { OAuth2Client } from "google-auth-library";
 import cloudinary from "../config/cloudinary.js";
 
 // Generate JWT
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: "7d",
-  });
+const generateToken = (user) => {
+  return jwt.sign(
+    {
+      id: user._id,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "7d" },
+  );
 };
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -338,7 +343,7 @@ export const googleLogin = async (req, res, next) => {
       });
     }
 
-    const token = generateToken(user._id);
+    const token = generateToken(user);
 
     res.json({
       name: user.name,
@@ -394,13 +399,12 @@ export const loginUser = async (req, res, next) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
 
+    if (!user) return res.status(401).json({ message: "User not found" });
+
     if (!isMatch)
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Incorrect password" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: rememberMe ? "30d" : "7d",
-    });
-
+    const token = generateToken(user);
     res.json({
       _id: user._id,
       name: user.name,
@@ -552,6 +556,50 @@ export const updateProfile = async (req, res, next) => {
       message: "Profile updated",
       user,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+// RESEND VERIFICATION EMAIL
+export const resendVerification = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ message: "Email already verified" });
+    }
+
+    const verificationToken = crypto.randomBytes(20).toString("hex");
+
+    user.verificationToken = crypto
+      .createHash("sha256")
+      .update(verificationToken)
+      .digest("hex");
+
+    user.verificationExpire = Date.now() + 24 * 60 * 60 * 1000;
+
+    await user.save();
+
+    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
+
+    const message = `
+      <h3>Email Verification</h3>
+      <p>Click below to verify your email:</p>
+      <a href="${verifyUrl}">${verifyUrl}</a>
+    `;
+
+    await sendEmail(user.email, "Verify Email", message);
+
+    res.json({ message: "Verification email resent" });
+
   } catch (error) {
     next(error);
   }

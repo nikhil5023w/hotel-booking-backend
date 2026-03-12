@@ -34,6 +34,7 @@ import {
   googleLogin,
   getProfile,
   updateProfile,
+  resendVerification,
 } from "../controllers/authController.js";
 import protect from "../middleware/authMiddleware.js";
 import upload from "../middleware/uploadProfile.js";
@@ -42,6 +43,7 @@ const router = express.Router();
 // AUTH
 router.post("/register", registerUser);
 router.post("/login", loginUser);
+router.post("/resend-verification", resendVerification);
 router.get("/verify-email/:token", verifyEmail);
 router.post("/google-login", googleLogin);
 // PASSWORD FEATURES
